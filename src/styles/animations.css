@@ -1,0 +1,77 @@
+@keyframes sl-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes sl-fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes sl-fade-in-down {
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes sl-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes sl-slide-in-left {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes sl-slide-in-right {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes sl-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes sl-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.animate-fade-in {
+  animation: sl-fade-in var(--sl-transition-normal) forwards;
+}
+
+.animate-fade-in-up {
+  animation: sl-fade-in-up var(--sl-transition-normal) forwards;
+}
+
+.animate-scale-in {
+  animation: sl-scale-in var(--sl-transition-normal) forwards;
+}
+
+.animate-spin {
+  animation: sl-spin 1s linear infinite;
+}
+
+.animate-pulse {
+  animation: sl-pulse 2s ease-in-out infinite;
+}

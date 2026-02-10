@@ -1,0 +1,263 @@
+<script setup lang="ts">
+import { ref, onMounted } from "vue";
+import { useRouter } from "vue-router";
+import SLCard from "../components/common/SLCard.vue";
+import SLButton from "../components/common/SLButton.vue";
+import SLInput from "../components/common/SLInput.vue";
+import SLSelect from "../components/common/SLSelect.vue";
+import { serverApi } from "../api/server";
+import { javaApi, type JavaInfo } from "../api/java";
+import { systemApi } from "../api/system";
+import { settingsApi } from "../api/settings";
+import { useServerStore } from "../stores/serverStore";
+
+const router = useRouter();
+const store = useServerStore();
+
+const serverName = ref("My Server");
+const coreType = ref("paper");
+const mcVersion = ref("1.21.4");
+const maxMemory = ref("2048");
+const minMemory = ref("512");
+const port = ref("25565");
+const jarPath = ref("");
+const selectedJava = ref("");
+
+const javaList = ref<JavaInfo[]>([]);
+const javaLoading = ref(false);
+const creating = ref(false);
+const errorMsg = ref<string | null>(null);
+const mode = ref<"create" | "import">("import");
+
+onMounted(async () => {
+  await loadCachedJavaList();
+});
+
+async function loadCachedJavaList() {
+  try {
+    const settings = await settingsApi.get();
+    if (settings.cached_java_list && settings.cached_java_list.length > 0) {
+      javaList.value = settings.cached_java_list;
+      if (javaList.value.length > 0) {
+        const preferred = javaList.value.find(
+          (j) => j.is_64bit && j.major_version >= 17
+        );
+        selectedJava.value = preferred ? preferred.path : javaList.value[0].path;
+      }
+    }
+  } catch (e) {
+    console.error("Failed to load cached Java list:", e);
+  }
+}
+
+async function detectJava() {
+  javaLoading.value = true;
+  try {
+    javaList.value = await javaApi.detect();
+    if (javaList.value.length > 0) {
+      const preferred = javaList.value.find(
+        (j) => j.is_64bit && j.major_version >= 17
+      );
+      selectedJava.value = preferred ? preferred.path : javaList.value[0].path;
+    }
+
+    // 保存到设置中
+    const settings = await settingsApi.get();
+    settings.cached_java_list = javaList.value;
+    await settingsApi.save(settings);
+  } catch (e) {
+    console.error("Java detection failed:", e);
+  } finally {
+    javaLoading.value = false;
+  }
+}
+
+async function pickJarFile() {
+  try {
+    const result = await systemApi.pickJarFile();
+    if (result) {
+      jarPath.value = result;
+    }
+  } catch (e) {
+    console.error("Pick file error:", e);
+  }
+}
+
+async function pickJavaFile() {
+  try {
+    const result = await systemApi.pickJavaFile();
+    if (result) {
+      selectedJava.value = result;
+    }
+  } catch (e) {
+    console.error("Pick file error:", e);
+  }
+}
+
+async function handleCreate() {
+  errorMsg.value = null;
+  if (!jarPath.value) { errorMsg.value = "请选择服务端 JAR 文件"; return; }
+  if (!selectedJava.value) { errorMsg.value = "请选择 Java 路径"; return; }
+  if (!serverName.value.trim()) { errorMsg.value = "请输入服务器名称"; return; }
+
+  creating.value = true;
+  try {
+    if (mode.value === "import") {
+      await serverApi.importServer({
+        name: serverName.value,
+        jarPath: jarPath.value,
+        javaPath: selectedJava.value,
+        maxMemory: parseInt(maxMemory.value) || 2048,
+        minMemory: parseInt(minMemory.value) || 512,
+      });
+    } else {
+      await serverApi.create({
+        name: serverName.value,
+        coreType: coreType.value,
+        mcVersion: mcVersion.value,
+        maxMemory: parseInt(maxMemory.value) || 2048,
+        minMemory: parseInt(minMemory.value) || 512,
+        port: parseInt(port.value) || 25565,
+        javaPath: selectedJava.value,
+        jarPath: jarPath.value,
+      });
+    }
+    await store.refreshList();
+    router.push("/");
+  } catch (e) {
+    errorMsg.value = String(e);
+  } finally {
+    creating.value = false;
+  }
+}
+
+function getJavaLabel(java: JavaInfo): string {
+  const type = java.major_version <= 8 ? "JRE" : "JDK";
+  return type + " " + java.major_version + " (" + java.version + ")";
+}
+</script>
+
+<template>
+  <div class="create-view animate-fade-in-up">
+    <div v-if="errorMsg" class="error-banner">
+      <span>{{ errorMsg }}</span>
+      <button class="error-close" @click="errorMsg = null">x</button>
+    </div>
+
+    <div class="mode-toggle">
+      <button class="mode-btn" :class="{ active: mode === 'import' }" @click="mode = 'import'">导入服务端</button>
+      <button class="mode-btn" :class="{ active: mode === 'create' }" @click="mode = 'create'">手动配置</button>
+    </div>
+
+    <SLCard title="Java 环境" subtitle="扫描系统中所有磁盘的 Java 安装">
+      <div v-if="javaLoading" class="java-loading">
+        <div class="spinner"></div>
+        <span>正在扫描所有磁盘...</span>
+      </div>
+      <div v-else-if="javaList.length === 0" class="java-empty">
+        <p class="text-body">未检测到 Java，请点击下方按钮扫描</p>
+        <SLButton variant="primary" @click="detectJava" style="margin-top: 12px;">
+          扫描 Java
+        </SLButton>
+      </div>
+      <div v-else class="java-list-container">
+        <div class="java-header">
+          <div class="java-found text-caption">找到 {{ javaList.length }} 个 Java</div>
+          <button class="rescan-btn" @click="detectJava" :disabled="javaLoading">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+            </svg>
+            重新扫描
+          </button>
+        </div>
+        <div class="java-list">
+          <div
+            v-for="java in javaList"
+            :key="java.path"
+            class="java-item"
+            :class="{ selected: selectedJava === java.path }"
+            @click="selectedJava = java.path"
+          >
+            <div class="java-item-left">
+              <span class="java-version">{{ getJavaLabel(java) }}</span>
+              <span class="java-vendor text-caption">{{ java.vendor }}</span>
+            </div>
+            <span class="java-path text-mono text-caption">{{ java.path }}</span>
+            <div class="java-tags">
+              <span v-if="java.is_64bit" class="java-tag">64-bit</span>
+              <span v-if="java.major_version >= 17" class="java-tag java-tag-ok">推荐</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="java-manual">
+        <SLInput label="或手动指定 Java 路径" v-model="selectedJava" placeholder="点击浏览选择 java.exe">
+          <template #suffix>
+            <button class="pick-btn" @click="pickJavaFile">浏览</button>
+          </template>
+        </SLInput>
+      </div>
+    </SLCard>
+
+    <SLCard title="服务器配置">
+      <div class="form-grid">
+        <SLInput label="服务器名称" placeholder="输入名称" v-model="serverName" />
+        <div class="jar-picker">
+          <SLInput label="服务端 JAR 文件" v-model="jarPath" placeholder="点击浏览选择 .jar 文件">
+            <template #suffix>
+              <button class="pick-btn" @click="pickJarFile">浏览</button>
+            </template>
+          </SLInput>
+        </div>
+        <template v-if="mode === 'create'">
+          <SLSelect label="服务端类型" :options="[{label:'Paper',value:'paper'},{label:'Purpur',value:'purpur'},{label:'Spigot',value:'spigot'},{label:'Fabric',value:'fabric'},{label:'Forge',value:'forge'},{label:'Vanilla',value:'vanilla'}]" v-model="coreType" />
+          <SLSelect label="游戏版本" :options="[{label:'1.21.4',value:'1.21.4'},{label:'1.20.4',value:'1.20.4'},{label:'1.20.1',value:'1.20.1'},{label:'1.19.4',value:'1.19.4'},{label:'1.18.2',value:'1.18.2'},{label:'1.16.5',value:'1.16.5'},{label:'1.12.2',value:'1.12.2'}]" v-model="mcVersion" />
+          <SLInput label="端口" type="number" v-model="port" />
+        </template>
+        <SLInput label="最大内存 (MB)" type="number" v-model="maxMemory" />
+        <SLInput label="最小内存 (MB)" type="number" v-model="minMemory" />
+      </div>
+    </SLCard>
+
+    <div class="create-actions">
+      <SLButton variant="secondary" @click="router.push('/')">取消</SLButton>
+      <SLButton variant="primary" size="lg" :loading="creating" @click="handleCreate">
+        {{ mode === "import" ? "导入服务器" : "创建服务器" }}
+      </SLButton>
+    </div>
+  </div>
+</template>
+
+<style scoped>
+.create-view { display: flex; flex-direction: column; gap: var(--sl-space-lg); max-width: 760px; }
+.error-banner { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.2); border-radius: var(--sl-radius-md); color: var(--sl-error); font-size: 0.875rem; }
+.error-close { color: var(--sl-error); font-weight: 600; }
+.mode-toggle { display: flex; gap: 2px; background: var(--sl-bg-secondary); border-radius: var(--sl-radius-md); padding: 3px; width: fit-content; }
+.mode-btn { padding: 8px 20px; border-radius: var(--sl-radius-sm); font-size: 0.875rem; font-weight: 500; color: var(--sl-text-secondary); transition: all var(--sl-transition-fast); }
+.mode-btn.active { background: var(--sl-surface); color: var(--sl-primary); box-shadow: var(--sl-shadow-sm); }
+.java-loading { display: flex; align-items: center; gap: var(--sl-space-sm); padding: var(--sl-space-lg); color: var(--sl-text-tertiary); }
+.spinner { width: 18px; height: 18px; border: 2px solid var(--sl-border); border-top-color: var(--sl-primary); border-radius: 50%; animation: sl-spin 0.8s linear infinite; }
+.java-empty { padding: var(--sl-space-lg); text-align: center; }
+.java-list-container { display: flex; flex-direction: column; gap: var(--sl-space-sm); }
+.java-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--sl-space-xs); }
+.java-found { margin: 0; }
+.rescan-btn { display: flex; align-items: center; gap: 6px; padding: 6px 12px; font-size: 0.8125rem; font-weight: 500; color: var(--sl-primary); background: var(--sl-primary-bg); border-radius: var(--sl-radius-sm); cursor: pointer; transition: all var(--sl-transition-fast); }
+.rescan-btn:hover:not(:disabled) { background: var(--sl-primary); color: white; }
+.rescan-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.java-list { display: flex; flex-direction: column; gap: var(--sl-space-xs); max-height: 320px; overflow-y: auto; }
+.java-item { display: flex; align-items: center; gap: var(--sl-space-md); padding: 10px 14px; border: 1px solid var(--sl-border); border-radius: var(--sl-radius-md); cursor: pointer; transition: all var(--sl-transition-fast); }
+.java-item:hover { border-color: var(--sl-primary-light); background: var(--sl-primary-bg); }
+.java-item.selected { border-color: var(--sl-primary); background: var(--sl-primary-bg); }
+.java-item-left { display: flex; flex-direction: column; min-width: 130px; }
+.java-version { font-size: 0.875rem; font-weight: 600; }
+.java-path { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.75rem; }
+.java-tags { display: flex; gap: 4px; flex-shrink: 0; }
+.java-tag { padding: 2px 8px; background: var(--sl-bg-tertiary); border-radius: var(--sl-radius-full); font-size: 0.6875rem; }
+.java-tag-ok { background: rgba(34,197,94,0.1); color: var(--sl-success); }
+.java-manual { padding-top: var(--sl-space-sm); border-top: 1px solid var(--sl-border-light); }
+.form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--sl-space-md); }
+.jar-picker { grid-column: 1 / -1; }
+.pick-btn { padding: 4px 12px; font-size: 0.8125rem; font-weight: 500; color: var(--sl-primary); background: var(--sl-primary-bg); border-radius: var(--sl-radius-sm); cursor: pointer; white-space: nowrap; }
+.pick-btn:hover { background: var(--sl-primary); color: white; }
+.create-actions { display: flex; justify-content: flex-end; gap: var(--sl-space-md); }
+</style>

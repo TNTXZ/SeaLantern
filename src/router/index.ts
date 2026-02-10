@@ -1,0 +1,53 @@
+import { createRouter, createWebHistory } from "vue-router";
+
+const routes = [
+  {
+    path: "/",
+    name: "home",
+    component: () => import("../views/HomeView.vue"),
+    meta: { title: "首页", icon: "home" },
+  },
+  {
+    path: "/create",
+    name: "create-server",
+    component: () => import("../views/CreateServerView.vue"),
+    meta: { title: "创建服务器", icon: "plus" },
+  },
+  {
+    path: "/console/:id?",
+    name: "console",
+    component: () => import("../views/ConsoleView.vue"),
+    meta: { title: "控制台", icon: "terminal" },
+  },
+  {
+    path: "/config/:id?",
+    name: "config",
+    component: () => import("../views/ConfigView.vue"),
+    meta: { title: "配置编辑", icon: "settings" },
+  },
+  {
+    path: "/players/:id?",
+    name: "players",
+    component: () => import("../views/PlayerView.vue"),
+    meta: { title: "玩家管理", icon: "users" },
+  },
+  {
+    path: "/settings",
+    name: "settings",
+    component: () => import("../views/SettingsView.vue"),
+    meta: { title: "设置", icon: "sliders" },
+  },
+  {
+    path: "/about",
+    name: "about",
+    component: () => import("../views/AboutView.vue"),
+    meta: { title: "关于", icon: "info" },
+  },
+];
+
+const router = createRouter({
+  history: createWebHistory(),
+  routes,
+});
+
+export default router;

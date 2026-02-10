@@ -1,0 +1,20 @@
+{
+  "identifier": "default",
+  "description": "Default capabilities",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "opener:default",
+	"core:window:allow-start-dragging",
+	"core:window:allow-minimize",
+	"core:window:allow-maximize",
+	"core:window:allow-toggle-maximize",
+	"core:window:allow-close",
+    "dialog:default",
+    "dialog:allow-open",
+    "dialog:allow-save",
+    "dialog:allow-message",
+    "dialog:allow-ask",
+    "dialog:allow-confirm"
+  ]
+}

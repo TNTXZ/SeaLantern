@@ -1,0 +1,36 @@
+.glass {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.glass-subtle {
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(8px) saturate(150%);
+  -webkit-backdrop-filter: blur(8px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.glass-strong {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(24px) saturate(200%);
+  -webkit-backdrop-filter: blur(24px) saturate(200%);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: var(--sl-radius-lg);
+  box-shadow: var(--sl-shadow-md);
+  transition: all var(--sl-transition-normal);
+}
+
+.glass-card:hover {
+  box-shadow: var(--sl-shadow-lg);
+  transform: translateY(-2px);
+  border-color: var(--sl-primary-light);
+}
