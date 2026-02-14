@@ -655,6 +655,10 @@ console.log('[AboutView] 脚本执行完成');
   gap: var(--sl-space-md);
 }
 
+.links-section :deep(.sl-button) {
+  min-width: 140px;
+}
+
 /* Footer */
 .about-footer {
   text-align: center;

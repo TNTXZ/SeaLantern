@@ -1,5 +1,9 @@
 use crate::models::settings::AppSettings;
 use crate::services::global;
+use font_kit::source::SystemSource;
+use std::collections::HashSet;
+#[cfg(target_os = "windows")]
+use window_vibrancy;
 
 #[tauri::command]
 pub fn get_settings() -> AppSettings {
@@ -28,4 +32,60 @@ pub fn import_settings(json: String) -> Result<AppSettings, String> {
         .map_err(|e| format!("Invalid JSON: {}", e))?;
     global::settings_manager().update(s.clone())?;
     Ok(s)
+}
+
+#[tauri::command]
+pub fn check_acrylic_support() -> Result<bool, String> {
+    #[cfg(target_os = "windows")]
+    {
+        Ok(true)
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        Ok(false)
+    }
+}
+
+#[tauri::command]
+pub fn apply_acrylic(window: tauri::Window, enabled: bool, dark_mode: bool) -> Result<(), String> {
+    #[cfg(target_os = "windows")]
+    {
+        if enabled {
+            // 根据主题选择不同的亚克力颜色
+            // 格式: (R, G, B, A) - A 是透明度 (0-255)
+            let color = if dark_mode {
+                // 暗色主题: 深色半透明背景
+                Some((15, 17, 23, 200))
+            } else {
+                // 浅色主题: 浅色半透明背景
+                Some((248, 250, 252, 200))
+            };
+            window_vibrancy::apply_acrylic(&window, color)
+                .map_err(|e| format!("Failed to apply acrylic: {}", e))?;
+        } else {
+            window_vibrancy::clear_acrylic(&window)
+                .map_err(|e| format!("Failed to clear acrylic: {}", e))?;
+        }
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        let _ = (window, enabled, dark_mode);
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub fn get_system_fonts() -> Result<Vec<String>, String> {
+    let source = SystemSource::new();
+    let fonts = source.all_families().map_err(|e| format!("Failed to get fonts: {}", e))?;
+    
+    let mut unique_fonts: HashSet<String> = HashSet::new();
+    for font in fonts {
+        unique_fonts.insert(font);
+    }
+    
+    let mut sorted_fonts: Vec<String> = unique_fonts.into_iter().collect();
+    sorted_fonts.sort_by(|a, b| a.to_lowercase().cmp(&b.to_lowercase()));
+    
+    Ok(sorted_fonts)
 }

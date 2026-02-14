@@ -17,6 +17,10 @@ export interface AppSettings {
   background_blur: number;
   background_brightness: number;
   background_size: string;
+  acrylic_enabled: boolean;
+  theme: string;
+  font_size: number;
+  font_family: string;
 }
 
 export const settingsApi = {
@@ -36,3 +40,15 @@ export const settingsApi = {
     return tauriInvoke("import_settings", { json });
   },
 };
+
+export async function checkAcrylicSupport(): Promise<boolean> {
+  return tauriInvoke<boolean>('check_acrylic_support');
+}
+
+export async function applyAcrylic(enabled: boolean, darkMode: boolean): Promise<void> {
+  return tauriInvoke<void>('apply_acrylic', { enabled, darkMode });
+}
+
+export async function getSystemFonts(): Promise<string[]> {
+  return tauriInvoke<string[]>('get_system_fonts');
+}

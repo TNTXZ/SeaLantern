@@ -34,3 +34,63 @@
   transform: translateY(-2px);
   border-color: var(--sl-primary-light);
 }
+
+[data-theme="dark"] .glass {
+  background: rgba(15, 17, 23, 0.72);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .glass-subtle {
+  background: rgba(15, 17, 23, 0.5);
+  border-color: rgba(255, 255, 255, 0.05);
+}
+
+[data-theme="dark"] .glass-strong {
+  background: rgba(15, 17, 23, 0.88);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .glass-card {
+  background: rgba(26, 29, 40, 0.8);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-acrylic="true"] .glass {
+  background: rgba(255, 255, 255, 0.45);
+  backdrop-filter: blur(8px) saturate(150%);
+  -webkit-backdrop-filter: blur(8px) saturate(150%);
+}
+
+[data-acrylic="true"] .glass-subtle {
+  background: rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(4px) saturate(120%);
+  -webkit-backdrop-filter: blur(4px) saturate(120%);
+}
+
+[data-acrylic="true"] .glass-strong {
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(12px) saturate(160%);
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
+}
+
+[data-acrylic="true"] .glass-card {
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(8px) saturate(150%);
+  -webkit-backdrop-filter: blur(8px) saturate(150%);
+}
+
+[data-theme="dark"][data-acrylic="true"] .glass {
+  background: rgba(15, 17, 23, 0.45);
+}
+
+[data-theme="dark"][data-acrylic="true"] .glass-subtle {
+  background: rgba(15, 17, 23, 0.3);
+}
+
+[data-theme="dark"][data-acrylic="true"] .glass-strong {
+  background: rgba(15, 17, 23, 0.6);
+}
+
+[data-theme="dark"][data-acrylic="true"] .glass-card {
+  background: rgba(26, 29, 40, 0.5);
+}

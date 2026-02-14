@@ -8,6 +8,7 @@ import SLProgress from "../components/common/SLProgress.vue";
 import { useServerStore } from "../stores/serverStore";
 import { useConsoleStore } from "../stores/consoleStore";
 import { serverApi } from "../api/server";
+import { systemApi, type SystemInfo } from "../api/system";
 
 const router = useRouter();
 const store = useServerStore();
@@ -16,13 +17,25 @@ const consoleStore = useConsoleStore();
 const actionLoading = ref<Record<string, boolean>>({});
 const actionError = ref<string | null>(null);
 
-// Simulated system stats (real implementation will use sysinfo crate later)
+// 系统信息
+const systemInfo = ref<SystemInfo | null>(null);
 const cpuUsage = ref(0);
 const memUsage = ref(0);
+const diskUsage = ref(0);
 const cpuHistory = ref<number[]>([]);
 const memHistory = ref<number[]>([]);
+const statsViewMode = ref<'detail' | 'gauge'>('gauge'); // 视图模式
 let statsTimer: ReturnType<typeof setInterval> | null = null;
 let refreshTimer: ReturnType<typeof setInterval> | null = null;
+
+// 格式化字节
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+}
 
 // Recent warning/error logs across all servers
 const recentAlerts = computed(() => {
@@ -52,15 +65,25 @@ onMounted(async () => {
     await store.refreshStatus(s.id);
   }
 
-  // Poll system stats (mock for now)
-  statsTimer = setInterval(() => {
-    cpuUsage.value = Math.round(15 + Math.random() * 25);
-    memUsage.value = Math.round(35 + Math.random() * 20);
-    cpuHistory.value.push(cpuUsage.value);
-    memHistory.value.push(memUsage.value);
-    if (cpuHistory.value.length > 30) cpuHistory.value.shift();
-    if (memHistory.value.length > 30) memHistory.value.shift();
-  }, 2000);
+  // 获取真实系统信息
+  const fetchSystemInfo = async () => {
+    try {
+      const info = await systemApi.getSystemInfo();
+      systemInfo.value = info;
+      cpuUsage.value = Math.round(info.cpu.usage);
+      memUsage.value = Math.round(info.memory.usage);
+      diskUsage.value = Math.round(info.disk.usage);
+      cpuHistory.value.push(cpuUsage.value);
+      memHistory.value.push(memUsage.value);
+      if (cpuHistory.value.length > 30) cpuHistory.value.shift();
+      if (memHistory.value.length > 30) memHistory.value.shift();
+    } catch (e) {
+      console.error('Failed to fetch system info:', e);
+    }
+  };
+  
+  await fetchSystemInfo();
+  statsTimer = setInterval(fetchSystemInfo, 2000);
 
   // Refresh server statuses
   refreshTimer = setInterval(async () => {
@@ -134,45 +157,80 @@ async function handleDelete(id: string) {
         </div>
       </SLCard>
 
-      <SLCard title="系统资源" class="stats-card">
-        <div class="stats-grid">
+      <SLCard class="stats-card">
+        <template #header>
+          <div class="stats-card-header">
+            <span class="card-title">系统资源</span>
+            <button class="view-toggle" @click="statsViewMode = statsViewMode === 'gauge' ? 'detail' : 'gauge'" :title="statsViewMode === 'gauge' ? '切换到详细视图' : '切换到仪表盘'">
+              <svg v-if="statsViewMode === 'gauge'" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+              <svg v-else width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            </button>
+          </div>
+        </template>
+        <!-- 仪表盘视图 -->
+        <div v-if="statsViewMode === 'gauge'" class="gauge-view">
+          <div class="gauge-grid">
+            <div class="gauge-item">
+              <svg class="gauge-svg" viewBox="0 0 36 36">
+                <path class="gauge-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke-width="3"/>
+                <path class="gauge-fill gauge-cpu" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke-width="3" :stroke-dasharray="`${cpuUsage}, 100`"/>
+              </svg>
+              <div class="gauge-text">
+                <span class="gauge-value">{{ cpuUsage }}%</span>
+                <span class="gauge-label">CPU</span>
+              </div>
+            </div>
+            <div class="gauge-item">
+              <svg class="gauge-svg" viewBox="0 0 36 36">
+                <path class="gauge-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke-width="3"/>
+                <path class="gauge-fill gauge-mem" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke-width="3" :stroke-dasharray="`${memUsage}, 100`"/>
+              </svg>
+              <div class="gauge-text">
+                <span class="gauge-value">{{ memUsage }}%</span>
+                <span class="gauge-label">内存</span>
+              </div>
+            </div>
+            <div class="gauge-item">
+              <svg class="gauge-svg" viewBox="0 0 36 36">
+                <path class="gauge-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke-width="3"/>
+                <path class="gauge-fill gauge-disk" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke-width="3" :stroke-dasharray="`${diskUsage}, 100`"/>
+              </svg>
+              <div class="gauge-text">
+                <span class="gauge-value">{{ diskUsage }}%</span>
+                <span class="gauge-label">磁盘</span>
+              </div>
+            </div>
+          </div>
+          <div v-if="systemInfo" class="gauge-details">
+            <div class="gauge-detail-item"><span class="detail-label">CPU</span><span class="detail-value">{{ systemInfo.cpu.count }} 核心</span></div>
+            <div class="gauge-detail-item"><span class="detail-label">内存</span><span class="detail-value">{{ formatBytes(systemInfo.memory.used) }} / {{ formatBytes(systemInfo.memory.total) }}</span></div>
+            <div class="gauge-detail-item"><span class="detail-label">磁盘</span><span class="detail-value">{{ formatBytes(systemInfo.disk.used) }} / {{ formatBytes(systemInfo.disk.total) }}</span></div>
+          </div>
+        </div>
+        <!-- 详细视图 -->
+        <div v-else class="stats-grid">
           <div class="stat-item">
             <div class="stat-header">
-              <span class="stat-label">CPU</span>
+              <span class="stat-label">CPU<span v-if="systemInfo" class="stat-detail"> · {{ systemInfo.cpu.count }} 核心</span></span>
               <span class="stat-value">{{ cpuUsage }}%</span>
             </div>
             <SLProgress :value="cpuUsage" variant="primary" :showPercent="false" />
-            <div class="mini-chart">
-              <svg viewBox="0 0 120 30" class="chart-svg">
-                <polyline
-                  :points="cpuHistory.map((v, i) => (i * 4) + ',' + (30 - v * 0.3)).join(' ')"
-                  fill="none"
-                  stroke="var(--sl-primary)"
-                  stroke-width="1.5"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-              </svg>
-            </div>
+            <div class="mini-chart"><svg viewBox="0 0 120 20" class="chart-svg"><polyline :points="cpuHistory.map((v, i) => (i * 4) + ',' + (20 - v * 0.2)).join(' ')" fill="none" stroke="var(--sl-primary)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
           </div>
           <div class="stat-item">
             <div class="stat-header">
-              <span class="stat-label">内存</span>
+              <span class="stat-label">内存<span v-if="systemInfo" class="stat-detail"> · {{ formatBytes(systemInfo.memory.used) }} / {{ formatBytes(systemInfo.memory.total) }}</span></span>
               <span class="stat-value">{{ memUsage }}%</span>
             </div>
             <SLProgress :value="memUsage" variant="success" :showPercent="false" />
-            <div class="mini-chart">
-              <svg viewBox="0 0 120 30" class="chart-svg">
-                <polyline
-                  :points="memHistory.map((v, i) => (i * 4) + ',' + (30 - v * 0.3)).join(' ')"
-                  fill="none"
-                  stroke="var(--sl-success)"
-                  stroke-width="1.5"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-              </svg>
+            <div class="mini-chart"><svg viewBox="0 0 120 20" class="chart-svg"><polyline :points="memHistory.map((v, i) => (i * 4) + ',' + (20 - v * 0.2)).join(' ')" fill="none" stroke="var(--sl-success)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-header">
+              <span class="stat-label">磁盘<span v-if="systemInfo" class="stat-detail"> · {{ formatBytes(systemInfo.disk.used) }} / {{ formatBytes(systemInfo.disk.total) }}</span></span>
+              <span class="stat-value">{{ diskUsage }}%</span>
             </div>
+            <SLProgress :value="diskUsage" variant="warning" :showPercent="false" />
           </div>
         </div>
       </SLCard>
@@ -301,13 +359,13 @@ async function handleDelete(id: string) {
 .stats-grid {
   display: flex;
   flex-direction: column;
-  gap: var(--sl-space-md);
+  gap: var(--sl-space-sm);
 }
 
 .stat-item {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
 }
 
 .stat-header {
@@ -318,10 +376,10 @@ async function handleDelete(id: string) {
 
 .stat-label { font-size: 0.8125rem; color: var(--sl-text-secondary); font-weight: 500; }
 .stat-value { font-size: 0.875rem; font-weight: 600; font-family: var(--sl-font-mono); }
+.stat-detail { font-size: 0.75rem; color: var(--sl-text-tertiary); font-family: var(--sl-font-mono); font-weight: 400; }
 
 .mini-chart {
-  height: 30px;
-  margin-top: 2px;
+  height: 20px;
 }
 
 .chart-svg {
@@ -460,6 +518,77 @@ async function handleDelete(id: string) {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+.stats-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+.card-title { font-size: 1rem; font-weight: 600; }
+.view-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px; height: 24px;
+  background: transparent;
+  border: 1px solid var(--sl-border);
+  border-radius: var(--sl-radius-sm);
+  color: var(--sl-text-secondary);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.view-toggle:hover { background: var(--sl-bg-hover); color: var(--sl-text-primary); }
+
+.gauge-grid {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  gap: var(--sl-space-sm);
+  padding: var(--sl-space-xs) 0;
+}
+.gauge-item {
+  position: relative;
+  width: 70px; height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.gauge-svg {
+  width: 100%; height: 100%;
+  transform: rotate(-90deg);
+}
+.gauge-bg { stroke: var(--sl-border); }
+.gauge-fill { stroke-linecap: round; transition: stroke-dasharray 0.3s; }
+.gauge-cpu { stroke: var(--sl-primary); }
+.gauge-mem { stroke: var(--sl-success); }
+.gauge-disk { stroke: #f59e0b; }
+.gauge-text {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.2;
+}
+.gauge-value { font-size: 0.875rem; font-weight: 600; font-family: var(--sl-font-mono); }
+.gauge-label { font-size: 0.625rem; color: var(--sl-text-tertiary); }
+
+.gauge-details {
+  display: flex;
+  justify-content: space-between;
+  padding-top: var(--sl-space-sm);
+  margin-top: var(--sl-space-sm);
+  border-top: 1px solid var(--sl-border-light);
+}
+.gauge-detail-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  flex: 1;
+}
+.detail-label { font-size: 0.6875rem; color: var(--sl-text-tertiary); }
+.detail-value { font-size: 0.75rem; font-family: var(--sl-font-mono); color: var(--sl-text-secondary); }
 
 @media (max-width: 900px) {
   .top-row { grid-template-columns: 1fr; }

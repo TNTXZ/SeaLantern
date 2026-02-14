@@ -60,6 +60,21 @@ pub struct AppSettings {
     pub window_y: Option<i32>,
     #[serde(default)]
     pub window_maximized: bool,
+
+    // 亚克力/毛玻璃效果 (Windows 专属，默认关闭)
+    #[serde(default)]
+    pub acrylic_enabled: bool,
+
+    // 主题: "auto"、"light" 或 "dark"，默认 "auto" (跟随系统)
+    #[serde(default = "default_theme")]
+    pub theme: String,
+
+    // 文本大小: 12-24，默认 14
+    #[serde(default = "default_font_size")]
+    pub font_size: u32,
+
+    #[serde(default = "default_font_family")]
+    pub font_family: String,
 }
 
 fn default_true() -> bool {
@@ -101,6 +116,16 @@ fn default_window_height() -> u32 {
     720
 }
 
+fn default_theme() -> String {
+    "auto".to_string()
+}
+fn default_font_size() -> u32 {
+    14
+}
+fn default_font_family() -> String {
+    String::new()
+}
+
 impl Default for AppSettings {
     fn default() -> Self {
         AppSettings {
@@ -124,6 +149,10 @@ impl Default for AppSettings {
             window_x: None,
             window_y: None,
             window_maximized: false,
+            acrylic_enabled: false,
+            theme: "auto".to_string(),
+            font_size: 14,
+            font_family: String::new(),
         }
     }
 }

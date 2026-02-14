@@ -10,3 +10,4 @@ SETTINGS_VERIFICATION.md
 *.backup
 test-router.html
 sync.bat
+bun.lock

@@ -193,7 +193,9 @@ function getJavaLabel(java: JavaInfo): string {
 
     <SLCard title="服务器配置">
       <div class="form-grid">
-        <SLInput label="服务器名称" placeholder="输入名称" v-model="serverName" />
+        <div class="server-name-row">
+          <SLInput label="服务器名称" placeholder="输入名称" v-model="serverName" />
+        </div>
         <div class="jar-picker">
           <SLInput label="服务端 JAR 文件" v-model="jarPath" placeholder="点击浏览选择 .jar 文件">
             <template #suffix>
@@ -208,7 +210,7 @@ function getJavaLabel(java: JavaInfo): string {
     </SLCard>
 
     <div class="create-actions">
-      <SLButton variant="secondary" @click="router.push('/')">取消</SLButton>
+      <SLButton variant="secondary" size="lg" @click="router.push('/')">取消</SLButton>
       <SLButton variant="primary" size="lg" :loading="creating" @click="handleCreate">
         导入服务器
       </SLButton>
@@ -217,7 +219,7 @@ function getJavaLabel(java: JavaInfo): string {
 </template>
 
 <style scoped>
-.create-view { display: flex; flex-direction: column; gap: var(--sl-space-lg); max-width: 760px; }
+.create-view { display: flex; flex-direction: column; gap: var(--sl-space-lg); max-width: 760px; margin: 0 auto; }
 .error-banner { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.2); border-radius: var(--sl-radius-md); color: var(--sl-error); font-size: 0.875rem; }
 .error-close { color: var(--sl-error); font-weight: 600; }
 .java-loading { display: flex; align-items: center; gap: var(--sl-space-sm); padding: var(--sl-space-lg); color: var(--sl-text-tertiary); }
@@ -241,8 +243,10 @@ function getJavaLabel(java: JavaInfo): string {
 .java-tag-ok { background: rgba(34,197,94,0.1); color: var(--sl-success); }
 .java-manual { padding-top: var(--sl-space-sm); border-top: 1px solid var(--sl-border-light); }
 .form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--sl-space-md); }
+.server-name-row { grid-column: 1 / -1; }
 .jar-picker { grid-column: 1 / -1; }
 .pick-btn { padding: 4px 12px; font-size: 0.8125rem; font-weight: 500; color: var(--sl-primary); background: var(--sl-primary-bg); border-radius: var(--sl-radius-sm); cursor: pointer; white-space: nowrap; }
 .pick-btn:hover { background: var(--sl-primary); color: white; }
-.create-actions { display: flex; justify-content: flex-end; gap: var(--sl-space-md); }
+.create-actions { display: flex; justify-content: center; gap: var(--sl-space-md); }
+.create-actions :deep(.sl-button) { min-width: 120px; }
 </style>

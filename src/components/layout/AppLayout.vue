@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted, onUnmounted, computed } from "vue";
 import AppSidebar from "./AppSidebar.vue";
 import AppHeader from "./AppHeader.vue";
 import { useUiStore } from "../../stores/uiStore";
-import { settingsApi } from "../../api/settings";
+import { settingsApi, applyAcrylic, checkAcrylicSupport } from "../../api/settings";
 import { convertFileSrc } from "@tauri-apps/api/core";
 
 const ui = useUiStore();
@@ -12,17 +12,108 @@ const backgroundOpacity = ref(0.3);
 const backgroundBlur = ref(0);
 const backgroundBrightness = ref(1.0);
 const backgroundSize = ref("cover");
+const acrylicEnabled = ref(false);
+const acrylicSupported = ref(false);
+const currentTheme = ref("auto");
+
+let systemThemeQuery: MediaQueryList | null = null;
+
+function getEffectiveTheme(theme: string): "light" | "dark" {
+  if (theme === "auto") {
+    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  }
+  return theme as "light" | "dark";
+}
+
+function applyTheme(theme: string) {
+  const effectiveTheme = getEffectiveTheme(theme);
+  document.documentElement.setAttribute("data-theme", effectiveTheme);
+  return effectiveTheme;
+}
+
+async function applyAcrylicEffect(enabled: boolean, theme: string) {
+  document.documentElement.setAttribute("data-acrylic", enabled ? "true" : "false");
+  
+  if (!acrylicSupported.value) {
+    return;
+  }
+  
+  if (enabled) {
+    const effectiveTheme = getEffectiveTheme(theme);
+    const isDark = effectiveTheme === "dark";
+    try {
+      await applyAcrylic(true, isDark);
+    } catch (e) {
+      console.error("Failed to apply acrylic:", e);
+    }
+  } else {
+    try {
+      await applyAcrylic(false, false);
+    } catch (e) {
+      console.error("Failed to clear acrylic:", e);
+    }
+  }
+}
+
+// 系统主题变化处理
+function handleSystemThemeChange() {
+  if (currentTheme.value === "auto") {
+    const effectiveTheme = applyTheme("auto");
+    // 如果亚克力开启，需要重新应用以匹配新主题
+    if (acrylicEnabled.value && acrylicSupported.value) {
+      applyAcrylicEffect(true, "auto");
+    }
+  }
+}
 
 onMounted(async () => {
+  // 检测亚克力支持
+  try {
+    acrylicSupported.value = await checkAcrylicSupport();
+  } catch {
+    acrylicSupported.value = false;
+  }
+  
   await loadBackgroundSettings();
 
   // 监听设置更新事件
-  window.addEventListener('settings-updated', loadBackgroundSettings);
+  window.addEventListener("settings-updated", loadBackgroundSettings);
+
+  // 监听系统主题变化
+  systemThemeQuery = window.matchMedia("(prefers-color-scheme: dark)");
+  systemThemeQuery.addEventListener("change", handleSystemThemeChange);
+});
+
+onUnmounted(() => {
+  window.removeEventListener("settings-updated", loadBackgroundSettings);
+  if (systemThemeQuery) {
+    systemThemeQuery.removeEventListener("change", handleSystemThemeChange);
+  }
 });
 
 async function loadBackgroundSettings() {
   try {
     const settings = await settingsApi.get();
+
+    // 保存当前主题设置
+    currentTheme.value = settings.theme || "auto";
+    acrylicEnabled.value = settings.acrylic_enabled;
+
+    // 应用主题
+    const effectiveTheme = applyTheme(settings.theme || "auto");
+
+    // 应用字体大小
+    document.documentElement.style.fontSize = (settings.font_size || 14) + "px";
+
+    // 应用亚克力效果（只有在支持的系统上）
+    if (acrylicSupported.value) {
+      await applyAcrylicEffect(settings.acrylic_enabled, settings.theme || "auto");
+    } else {
+      // 不支持亚克力时，确保 data-acrylic 为 false
+      document.documentElement.setAttribute("data-acrylic", "false");
+    }
+
+    // 应用背景图片设置
     if (settings.background_image) {
       backgroundImage.value = convertFileSrc(settings.background_image);
     } else {
@@ -32,15 +123,20 @@ async function loadBackgroundSettings() {
     backgroundBlur.value = settings.background_blur;
     backgroundBrightness.value = settings.background_brightness;
     backgroundSize.value = settings.background_size;
-    console.log("Background settings loaded:", {
+    console.log("Settings loaded:", {
+      theme: settings.theme,
+      effectiveTheme,
+      fontSize: settings.font_size,
+      acrylicEnabled: settings.acrylic_enabled,
+      acrylicSupported: acrylicSupported.value,
       image: backgroundImage.value,
       opacity: backgroundOpacity.value,
       blur: backgroundBlur.value,
       brightness: backgroundBrightness.value,
-      size: backgroundSize.value
+      size: backgroundSize.value,
     });
   } catch (e) {
-    console.error("Failed to load background settings:", e);
+    console.error("Failed to load settings:", e);
   }
 }
 
