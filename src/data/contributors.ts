@@ -102,6 +102,12 @@ export const contributors: Contributor[] = [
     avatar: "https://minotar.net/helm/f04be4dcd0ca49af89faf61068ec34e2/64",
     url: "https://github.com/maobuben",
   },
+  {
+    name: "橙子冰棒",
+    role: "修复Java查找算法",
+    avatar: "https://blog.orllow.cn/images/author.webp",
+    url: "https://github.com/Orange-Icepop",
+  },
   // ============================================
   // 在这里添加更多贡献者！
   // ============================================
