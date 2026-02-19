@@ -88,6 +88,7 @@ const handleInput = (e: Event) => {
   border: 0;
   outline: 0;
   min-width: 0;
+  color: var(--sl-text-primary);
 }
 
 .sl-input:disabled {
@@ -97,6 +98,17 @@ const handleInput = (e: Event) => {
 
 .sl-input::placeholder {
   color: var(--sl-text-tertiary);
+}
+
+/* 禁用数字输入框的上下箭头 */
+.sl-input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+.sl-input[type="number"]::-webkit-outer-spin-button,
+.sl-input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 .sl-input-prefix,
