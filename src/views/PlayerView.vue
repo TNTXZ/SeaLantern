@@ -10,7 +10,7 @@ import { useConsoleStore } from "../stores/consoleStore";
 import { playerApi, type PlayerEntry, type BanEntry, type OpEntry } from "../api/player";
 import { TIME, MESSAGES } from "../utils/constants";
 import { validatePlayerName, handleError } from "../utils/errorHandler";
-import { i18n } from "../locales";
+import { i18n } from "../language";
 import { useMessage } from "../composables/useMessage";
 import { useLoading } from "../composables/useAsync";
 import { useTabIndicator } from "../composables/useTabIndicator";
@@ -29,6 +29,12 @@ const onlinePlayers = ref<string[]>([]);
 
 const { loading, withLoading } = useLoading();
 const { error, success, showError, showSuccess, clear: clearMessage } = useMessage();
+
+// 监听语言变化，更新 Tab 指示器位置
+const localeRef = i18n.getLocaleRef();
+watch(localeRef, () => {
+  updateTabIndicator();
+});
 
 const showAddModal = ref(false);
 const addPlayerName = ref("");

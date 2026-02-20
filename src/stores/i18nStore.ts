@@ -1,6 +1,6 @@
 import { computed, onMounted } from "vue";
 import { defineStore } from "pinia";
-import { i18n, type LocaleCode, setTranslations } from "../locales";
+import { i18n, type LocaleCode, setTranslations } from "../language";
 import { settingsApi } from "../api/settings";
 import { fetchLocale } from "../api/remoteLocales";
 
@@ -9,15 +9,12 @@ const LOCALE_LABEL_KEYS: Record<string, string> = {
   "en-US": "header.english",
   "zh-TW": "header.chinese_tw",
   "de-DE": "header.deutsch",
-  "en-AU": "header.aussie",
   "es-ES": "header.spanish",
   "ja-JP": "header.japanese",
   "ru-RU": "header.russian",
   "vi-VN": "header.vietnamese",
   "ko-KR": "header.korean",
-  "fr-FA": "header.french",
-  "fr-CA": "header.french_ca",
-  "es-AR": "header.spanish_ar"
+  "fr-FA": "header.french"
 };
 
 export const useI18nStore = defineStore("i18n", () => {

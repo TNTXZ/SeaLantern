@@ -1,5 +1,17 @@
 {
   "languageName": "Русский",
+  "header": {
+    "chinese": "Упрощённый китайский",
+    "english": "Английский",
+    "chinese_tw": "Традиционный китайский",
+    "deutsch": "Немецкий",
+    "spanish": "Испанский",
+    "japanese": "Японский",
+    "russian": "Русский",
+    "vietnamese": "Вьетнамский",
+    "korean": "Корейский",
+    "french": "Французский"
+  },
   "common": {
     "app_name": "Sea Lantern",
     "home": "Главная",
@@ -387,15 +399,6 @@
       "fill": "Растянуть",
       "auto": "Авто"
     },
-    "color_options": {
-      "default": "По умолч.",
-      "midnight": "Полночь",
-      "forest": "Лес",
-      "sunset": "Закат",
-      "ocean": "Океан",
-      "rose": "Роза",
-      "custom": "Своя"
-    },
     "edit_colorplan_options": {
       "light": "Светлая",
       "dark": "Темная",
@@ -471,7 +474,10 @@
     "developer_mode": "Режим разработчика",
     "developer_mode_desc": "Расширенные функции и отладка",
     "developer_mode_toggle": "Включить",
-    "developer_mode_toggle_desc": "Включить расширенные возможности"
+    "developer_mode_toggle_desc": "Включить расширенные возможности",
+    "color_options": {
+      "custom": "Пользовательский"
+    }
   },
   "about": {
     "title": "О программе",

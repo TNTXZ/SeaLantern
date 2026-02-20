@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, watch, computed } from "vue";
+import { ref, onMounted, onUnmounted, watch, computed } from "vue";
 import SLCard from "../components/common/SLCard.vue";
 import SLButton from "../components/common/SLButton.vue";
 import SLInput from "../components/common/SLInput.vue";
@@ -17,9 +17,10 @@ import {
 } from "../api/settings";
 import { systemApi } from "../api/system";
 import { convertFileSrc } from "@tauri-apps/api/core";
-import { i18n } from "../locales";
+import { i18n } from "../language";
 import { useMessage } from "../composables/useMessage";
 import { useLoading } from "../composables/useAsync";
+import { getThemeOptions } from "../themes";
 
 const { error, showError, clearError } = useMessage();
 const { loading, start: startLoading, stop: stopLoading } = useLoading();
@@ -49,15 +50,13 @@ const backgroundSizeOptions = computed(() => [
   { label: i18n.t("common.background_size_auto"), value: "auto" },
 ]);
 
-const colorOptions = computed(() => [
-  { label: i18n.t("common.color_default"), value: "default" },
-  { label: "Midnight", value: "midnight" },
-  { label: "Sunset", value: "sunset" },
-  { label: "Ocean", value: "ocean" },
-  { label: "Rose", value: "rose" },
-  { label: "Zombie", value: "zombie" },
-  { label: i18n.t("common.color_custom"), value: "custom" },
-]);
+const colorOptions = computed(() => {
+  const themes = getThemeOptions();
+  return [
+    ...themes,
+    { label: i18n.t("common.color_custom"), value: "custom" },
+  ];
+});
 
 const editColorOptions = computed(() => [
   { label: i18n.t("common.edit_color_light"), value: "light" },
@@ -107,6 +106,17 @@ onMounted(async () => {
     acrylicSupported.value = await checkAcrylicSupport();
   } catch {
     acrylicSupported.value = false;
+  }
+
+  // 监听设置更新事件
+  window.addEventListener("settings-updated", loadSettings);
+});
+
+onUnmounted(() => {
+  window.removeEventListener("settings-updated", loadSettings);
+  if (saveTimeout) {
+    clearTimeout(saveTimeout);
+    saveTimeout = null;
   }
 });
 
@@ -160,7 +170,19 @@ async function loadSettings() {
 }
 
 function markChanged() {
-  saveSettings();
+  debouncedSave();
+}
+
+let saveTimeout: ReturnType<typeof setTimeout> | null = null;
+
+function debouncedSave() {
+  if (saveTimeout) {
+    clearTimeout(saveTimeout);
+  }
+  saveTimeout = setTimeout(() => {
+    saveSettings();
+    saveTimeout = null;
+  }, 500);
 }
 
 function getEffectiveTheme(theme: string): "light" | "dark" {

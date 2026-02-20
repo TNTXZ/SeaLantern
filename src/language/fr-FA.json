@@ -1,5 +1,17 @@
 {
   "languageName": "Françaiss",
+  "header": {
+    "chinese": "Chinois simplifié",
+    "english": "Anglais",
+    "chinese_tw": "Chinois traditionnel",
+    "deutsch": "Allemand",
+    "spanish": "Espagnol",
+    "japanese": "Japonais",
+    "russian": "Russe",
+    "vietnamese": "Vietnamien",
+    "korean": "Coréen",
+    "french": "Français"
+  },
   "common": {
     "app_name": "Sea Lantern",
     "home": "Accueil",
@@ -392,15 +404,6 @@
       "fill": "Étirer",
       "auto": "Taille d'origine"
     },
-    "color_options": {
-      "default": "Défaut",
-      "midnight": "Minuit",
-      "forest": "Forêt",
-      "sunset": "Coucher de soleil",
-      "ocean": "Océan",
-      "rose": "Rose",
-      "custom": "Personnalisé"
-    },
     "edit_colorplan_options": {
       "light": "Clair",
       "dark": "Sombre",
@@ -476,7 +479,10 @@
     "developer_mode": "Mode développeur",
     "developer_mode_desc": "Activer les fonctionnalités avancées et les options de débogage",
     "developer_mode_toggle": "Activer le mode développeur",
-    "developer_mode_toggle_desc": "Permet d'utiliser les outils de débogage"
+    "developer_mode_toggle_desc": "Permet d'utiliser les outils de débogage",
+    "color_options": {
+      "custom": "Personnalisé"
+    }
   },
   "about": {
     "title": "À propos",

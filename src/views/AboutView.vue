@@ -1,4 +1,4 @@
-﻿﻿﻿<script setup lang="ts">
+<script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import { Plus, Code2, PenTool, HelpCircle, BookText, Globe, Megaphone, Info, Copy } from "lucide-vue-next";
 import { openUrl } from "@tauri-apps/plugin-opener";
@@ -8,7 +8,7 @@ import SLNotification from "../components/common/SLNotification.vue";
 import { contributors as contributorsList } from "../data/contributors";
 import { useUpdateStore } from "../stores/updateStore";
 import { getAppVersion, BUILD_YEAR } from "../utils/version";
-import { i18n } from "../locales";
+import { i18n } from "../language";
 import { onDownloadProgress } from "../api/update";
 import type { UnlistenFn } from "@tauri-apps/api/event";
 // ===== 新增：导入 SLModal 组件 =====
@@ -153,7 +153,7 @@ async function handleCheckUpdate() {
         currentVersion: info.current_version,
         latestVersion: info.latest_version,
         helper: helper,
-        command: `${helper} -S sealantern`,
+        command: `${helper} -Rns sealantern && ${helper} -S sealantern`,
       };
 
       showAurWindow.value = true;
@@ -179,7 +179,7 @@ async function handlePrimaryUpdateAction() {
       currentVersion: updateStore.updateInfo.current_version,
       latestVersion: updateStore.updateInfo.latest_version,
       helper: helper,
-      command: `${helper} -S sealantern`,
+      command: `${helper} -Rns sealantern && ${helper} -S sealantern`,
     };
 
     showAurWindow.value = true;
@@ -754,7 +754,6 @@ const aurButtonText = computed(() => i18n.t("about.aur_window_button"));
 .contributor-avatar {
   width: 48px;
   height: 48px;
-  border-radius: var(--sl-radius-md);
   flex-shrink: 0;
   image-rendering: pixelated;
 }
